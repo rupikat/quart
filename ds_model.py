@@ -1,14 +1,16 @@
 import pandas as pd
 import numpy as np
+
 # plotting
 import matplotlib.pyplot as plt
 import seaborn as sns
 %matplotlib inline
+
 #model
 from sklearn.cross_validation import train_test_split
 from sklearn.linear_model import LogisticRegression
+
 #model performance
-from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
 from sklearn.metrics import roc_auc_score
@@ -90,7 +92,6 @@ threshold = list(roc_t['threshold'])
 data['pred'] = data['pred_proba'].map(lambda x: 1 if x > threshold[0] else 0)
 
 # Print confusion Matrix
-
 cm=confusion_matrix(y_test, data['pred'])
 print("The classification matrix")
 print(cm)
@@ -100,8 +101,7 @@ print(classification_report(y_test,  data['pred'], digits=6))
 
 #accuracy using roc
 logit_roc_auc = roc_auc_score(y_test, data['pred'])
-print("Accuracy: %.2f%%" % (accuracy * 100.0))
-
+print("Accuracy: %.2f%%" % (logit_roc_auc * 100.0))
 sensitivity = cm[0,0]/(cm[0,0]+cm[0,1])
 print('Sensitivity : ', sensitivity )
 specificity = cm[1,1]/(cm[1,0]+cm[1,1])
