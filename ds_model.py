@@ -76,16 +76,40 @@ logreg=LogisticRegression(
 logreg.fit(X_train,y_train)
 
 #prediction
-y_pred = logreg.predict(X_test)
-y_pred_prob=logreg.predict_proba(X_test)
+data=pd.DataFrame(index=X_test.index)#(dummy dataframe )
+data['pred_proba']=logreg.predict_proba(X_test)[:,1]
 
+#finding optimal threshold
+fpr, tpr, threshold = roc_curve(y_test, data['pred_proba'])
+i = np.arange(len(tpr)) 
+roc = pd.DataFrame({'tf' : pd.Series(tpr-(1-fpr), index=i), 'threshold' : pd.Series(threshold, index=i)})
+roc_t = roc.ix[(roc.tf-0).abs().argsort()[:1]]
+threshold = list(roc_t['threshold'])
 
-#MODEL PERFORMANCE
+#finding prediction using thereshold
+data['pred'] = data['pred_proba'].map(lambda x: 1 if x > threshold[0] else 0)
+
+# Print confusion Matrix
+
+cm=confusion_matrix(y_test, data['pred'])
+print("The classification matrix")
+print(cm)
+
+print("The classification Report")
+print(classification_report(y_test,  data['pred'], digits=6))
+
+#accuracy using roc
+logit_roc_auc = roc_auc_score(y_test, data['pred'])
+print("Accuracy: %.2f%%" % (accuracy * 100.0))
+
+sensitivity = cm[0,0]/(cm[0,0]+cm[0,1])
+print('Sensitivity : ', sensitivity )
+specificity = cm[1,1]/(cm[1,0]+cm[1,1])
+print('Specificity : ', specificity)
+
 #ROC curve
-logit_roc_auc = roc_auc_score(y_test, y_pred)
-fpr, tpr, thresholds = roc_curve(y_test, y_pred_prob[:,1])
 plt.figure()
-plt.plot(fpr, tpr, label='Logistic Regression (area = %0.2f)' % logit_roc_auc)
+plt.plot(fpr, tpr, label='Logistic Regression (area = %0.2f)' % logit_roc_auc )
 plt.plot([0, 1], [0, 1],'r--')
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
@@ -95,16 +119,6 @@ plt.title('Receiver operating characteristic')
 plt.legend(loc="lower right")
 plt.savefig('Log_ROC')
 plt.show()
-#classification report
-print("The classification Report")
-print(classification_report(y_test, y_pred, digits=6))
-#Accuracy
-accuracy = accuracy_score(y_test, y_pred)
-print("Accuracy: %.2f%%" % (accuracy * 100.0))
-#confusion matrix
-cm = confusion_matrix(y_test, y_pred)
-print("The classification matrix is")
-print(cm)
 
 
 #SUBMISSION 
