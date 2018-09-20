@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-
 # plotting
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -16,8 +15,8 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
 
 #loading test and test data
-df_train = pd.read_csv('/home/rupikat/Downloads/ds_data_big/ds_data/data_train.csv',index_col='id')
-df_test = pd.read_csv('/home/rupikat/Downloads/ds_data_big/ds_data/data_test.csv',index_col='id')
+df_train = pd.read_csv('data_train.csv',index_col='id')
+df_test = pd.read_csv('data_test.csv',index_col='id')
 
 #finding the columns having NaN values
 nan_column=df_train.isnull().sum()
@@ -28,13 +27,15 @@ nan_column_test=df_test.isnull().sum()
 nan_column_test=nan_column_test[nan_column_test>0]
 #print(nan_column_test.sort_values(ascending=False))
 
-#finding the columns of 
+#finding the columns having binary values 
 bool_cols_train = [col for col in df_train 
              if df_train[[col]].dropna().isin([0, 1]).all().values]
 #print("columns in test having binary values:",bool_cols_train)
 bool_cols_test = [col for col in df_test
              if df_test[[col]].dropna().isin([0, 1]).all().values]
 #print("columns in test having binary values:",bool_cols_test)
+ 
+ #replacing the NaN with suitable values
 fill_na_col_bool_train=list(set(nan_column.index)&set(bool_cols_train))
 fill_na_col_bool_test=list(set(nan_column_test.index)&set(bool_cols_test))
 fill_na_col_num_train=list(set(nan_column.index)-set(fill_na_col_bool_train))
@@ -55,13 +56,17 @@ for col in fill_bool:
     df_test[col].fillna(df_test[col].mode()[0] , inplace = True)
     mode = df_train[col].mode().astype(np.int32)
     df_train[col].fillna(df_train[col].mode()[0] , inplace = True)
+    
+#dropping the columns which are having NaN more than 50%    
 df_train=df_train.drop(['cat6', 'cat8'], axis=1)
 df_test=df_test.drop(['cat6', 'cat8'], axis=1)    
 print(df_test.isnull().sum())
 print(df_train.isnull().sum())
 
-
+#splitting the ds_train data for test and validation with starified classes
 X_train, X_test, y_train, y_test = train_test_split(df_train.drop('target',axis=1),df_train.target, test_size=0.2,stratify=df_train.target, random_state=4)
+
+#MODEL
 logreg=LogisticRegression(
     penalty='l2',C=10,
     n_jobs=-1, verbose=1, 
@@ -70,9 +75,12 @@ logreg=LogisticRegression(
 )
 logreg.fit(X_train,y_train)
 
+#prediction
 y_pred = logreg.predict(X_test)
 y_pred_prob=logreg.predict_proba(X_test)
 
+
+#MODEL PERFORMANCE
 #ROC curve
 logit_roc_auc = roc_auc_score(y_test, y_pred)
 fpr, tpr, thresholds = roc_curve(y_test, y_pred_prob[:,1])
@@ -87,11 +95,13 @@ plt.title('Receiver operating characteristic')
 plt.legend(loc="lower right")
 plt.savefig('Log_ROC')
 plt.show()
-
+#classification report
 print("The classification Report")
 print(classification_report(y_test, y_pred, digits=6))
+#Accuracy
 accuracy = accuracy_score(y_test, y_pred)
 print("Accuracy: %.2f%%" % (accuracy * 100.0))
+#confusion matrix
 cm = confusion_matrix(y_test, y_pred)
 print("The classification matrix is")
 print(cm)
